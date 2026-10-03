@@ -66,7 +66,9 @@ cd /work
 su -s /bin/bash builder -c 'cd /work && makepkg -s --noconfirm'
 install -d /pkg/dist
 cp -a /work/xdg-desktop-portal-kde-6.7.5-1.1-x86_64.pkg.tar.zst /pkg/dist/
-sha256sum /work/xdg-desktop-portal-kde-6.7.5-1.1-x86_64.pkg.tar.zst | tee /pkg/dist/SHA256SUMS
+chmod a+r /pkg/dist/xdg-desktop-portal-kde-6.7.5-1.1-x86_64.pkg.tar.zst
+(cd /pkg/dist && sha256sum xdg-desktop-portal-kde-6.7.5-1.1-x86_64.pkg.tar.zst | tee SHA256SUMS)
+chmod a+r /pkg/dist/SHA256SUMS
 
 echo '=== pacman -U ==='
 pacman -U --noconfirm /work/xdg-desktop-portal-kde-6.7.5-1.1-x86_64.pkg.tar.zst
