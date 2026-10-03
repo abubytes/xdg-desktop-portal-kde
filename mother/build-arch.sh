@@ -46,7 +46,7 @@ tar -C "$STAGE" -cJf "$TARBALL" "${PKGNAME}-${PKGVER}"
 
 echo "Using ${ENGINE[*]} to build in archlinux:latest (MAKEFLAGS=-j${JOBS})"
 "${ENGINE[@]}" pull archlinux:latest
-"${ENGINE[@]}" run --rm \
+"${ENGINE[@]}" run --rm -i \
   -e MAKEFLAGS="-j${JOBS}" \
   -e JOBS="$JOBS" \
   -v "$MOTHER:/pkg:rw" \
