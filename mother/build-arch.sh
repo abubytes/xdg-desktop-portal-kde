@@ -11,7 +11,14 @@ TARBALL="$MOTHER/${PKGNAME}-${PKGVER}.tar.xz"
 JOBS="$(nproc)"
 
 if command -v docker >/dev/null 2>&1; then
-  ENGINE=(docker)
+  if docker info >/dev/null 2>&1; then
+    ENGINE=(docker)
+  elif sudo docker info >/dev/null 2>&1; then
+    ENGINE=(sudo docker)
+  else
+    echo "docker is installed but the daemon is not reachable." >&2
+    exit 1
+  fi
 elif command -v podman >/dev/null 2>&1; then
   ENGINE=(podman)
 else
@@ -83,7 +90,7 @@ cd /work/src
 cmake -B build -S xdg-desktop-portal-kde-6.7.5 \
   -DCMAKE_INSTALL_LIBEXECDIR=lib \
   -DBUILD_TESTING=ON
-cmake --build build -j"${JOBS}"
+cmake --build build
 cd build
 # colorschemetest launches the portal on a session bus and needs a display/desktop.
 echo "Skipping colorschemetest (needs a session bus / desktop)."
