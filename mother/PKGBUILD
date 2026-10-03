@@ -1,0 +1,56 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Modified from Arch 6.7.5-1 to build this working tree (screencast pre-authorization).
+
+pkgname=xdg-desktop-portal-kde
+pkgver=6.7.5
+_dirver=$(echo $pkgver | cut -d. -f1-3)
+pkgrel=1.1
+pkgdesc='A backend implementation for xdg-desktop-portal using Qt/KF5'
+arch=(x86_64)
+url='https://kde.org/plasma-desktop/'
+license=(LGPL-2.0-or-later)
+depends=(glibc
+         kcmutils
+         kconfig
+         kcoreaddons
+         kcrash
+         kdeclarative
+         kglobalaccel
+         kiconthemes
+         ki18n
+         kio
+         kio-fuse
+         kirigami
+         kirigami-addons
+         kitemviews
+         knotifications
+         kpipewire
+         kservice
+         kstatusnotifieritem
+         kwayland
+         kwindowsystem
+         libstdc++
+         libxkbcommon
+         plasma-workspace # QML
+         qt6-base
+         qt6-declarative
+         wayland
+         xdg-desktop-portal)
+makedepends=(extra-cmake-modules
+             plasma-wayland-protocols
+             wayland-protocols)
+provides=(xdg-desktop-portal-impl)
+groups=(plasma)
+source=($pkgname-$pkgver.tar.xz)
+sha256sums=('SKIP')
+
+build() {
+  cmake -B build  -S $pkgname-$pkgver \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DBUILD_TESTING=OFF
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

@@ -53,6 +53,18 @@ using Permissions = QStringList;
 // a{sas}
 using AppIdPermissionsMap = QMap<QString, Permissions>;
 
+// Mega-authorization is a permission system specific to the KDE portal implementation.
+// A mega-authorized application is one that has been granted permissions to access all features of a
+// given portal **without** any further user interaction.
+// This helper checks the permission store table "kde-authorized" for permissionId (for example
+// "remote-desktop" or "screencast") and should be used to check if a UI interaction can be skipped.
+// Particularly useful for headless setups and when the user is not physically at the machine.
+// NOTE: an empty app_id should never occur for flatpak/snap applications and as such is meant to denote a host
+//   application of which the app_id is not known. In such a case the user may authorize the empty app_id to cover
+//   generic host applications. Note that this is different from giving out an "any" permission. An application that
+//   has an app_id will not be covered by the empty rule.
+bool isAppMegaAuthorized(const QString &app_id, const QString &permissionId);
+
 Q_DECLARE_METATYPE(VariantMapMap)
 Q_DECLARE_METATYPE(Shortcuts)
 

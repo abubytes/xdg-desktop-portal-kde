@@ -8,6 +8,43 @@
  */
 
 #include "dbushelpers.h"
+#include "debug.h"
+#include "permission_store.h"
+
+#include <QDBusConnection>
+#include <QDBusMetaType>
+#include <QDBusReply>
+
+using namespace Qt::StringLiterals;
+
+bool isAppMegaAuthorized(const QString &app_id, const QString &permissionId)
+{
+    qDBusRegisterMetaType<AppIdPermissionsMap>();
+    OrgFreedesktopImplPortalPermissionStoreInterface permissionStore(u"org.freedesktop.impl.portal.PermissionStore"_s,
+                                                                     u"/org/freedesktop/impl/portal/PermissionStore"_s,
+                                                                     QDBusConnection::sessionBus());
+    // Bring the timeout way down. Permission store queries are fast, if they aren't then something is wrong and there is no point waiting a long time.
+    permissionStore.setTimeout(1000);
+    QDBusVariant data;
+    auto reply = permissionStore.Lookup(u"kde-authorized"_s, permissionId, data);
+    if (reply.isValid()) {
+        auto appIdPermissions = reply.value();
+        if (!appIdPermissions.contains(app_id)) {
+            qCDebug(XdgDesktopPortalKde) << "MegaAuth:" << permissionId << "permission not granted for" << app_id;
+            return false;
+        }
+
+        auto permissions = appIdPermissions.value(app_id);
+        if (permissions.contains("yes"_L1)) {
+            qCDebug(XdgDesktopPortalKde) << "MegaAuth:" << permissionId << "permission granted for" << app_id;
+            return true;
+        }
+    } else {
+        qCWarning(XdgDesktopPortalKde) << "MegaAuth: Failed to lookup" << permissionId << "permissions:" << reply.error().message();
+    }
+
+    return false;
+}
 
 QDBusArgument &operator<<(QDBusArgument &arg, const Choice &choice)
 {

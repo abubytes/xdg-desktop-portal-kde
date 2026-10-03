@@ -19,8 +19,11 @@
 #include "waylandintegration.h"
 #include "remotedesktop.h"
 
+#include "outputsmodel.h"
+
 #include <KConfigGroup>
 #include <KLocalizedString>
+#include <KNotification>
 #include <KSharedConfig>
 #include <KWayland/Client/plasmawindowmanagement.h>
 #include <KWayland/Client/plasmawindowmodel.h>
@@ -31,6 +34,7 @@
 #include <QDataStream>
 #include <QGuiApplication>
 #include <QIODevice>
+#include <QScreen>
 
 #include <kstatusnotifieritem.h>
 #include <ranges>
@@ -377,6 +381,50 @@ void ScreenCastPortal::Start(const QDBusObjectPath &handle,
         return;
     }
 
+    const bool monitorAllowed = session->types() & Monitor;
+    if (monitorAllowed && isAppMegaAuthorized(app_id, u"screencast"_s)) {
+        qCInfo(XdgDesktopPortalKdeScreenCast) << "Using pre-authorized ScreenCast path for app_id" << app_id;
+
+        const auto screens = QGuiApplication::screens();
+        auto makeMonitorOutput = [](QScreen *screen) {
+            const QPoint pos = screen->geometry().topLeft();
+            const QString uniqueId = QStringLiteral("%1x%2").arg(pos.x()).arg(pos.y());
+            return Output(Output::Monitor, screen, screen->name(), uniqueId, screen->name(), nullptr);
+        };
+        if (session->multipleSources()) {
+            for (QScreen *screen : screens) {
+                selectedOutputs << makeMonitorOutput(screen);
+            }
+        } else {
+            QScreen *screen = QGuiApplication::primaryScreen();
+            if (!screen && !screens.isEmpty()) {
+                screen = screens.first();
+            }
+            if (screen) {
+                selectedOutputs << makeMonitorOutput(screen);
+            }
+        }
+
+        if (!selectedOutputs.isEmpty()) {
+            auto notification = new KNotification(QStringLiteral("screencaststarted"), KNotification::CloseOnTimeout);
+            notification->setTitle(i18nc("title of notification about screen sharing started", "Screen sharing session started"));
+            const QString applicationName = Utils::applicationName(app_id);
+            QString description = applicationName.isEmpty() ? i18nc("@info", "An application is exercising special permissions:\n")
+                                                            : i18nc("@info", "%1 is exercising special privileges:", applicationName);
+            description +=
+                i18nc("@info As in, 'an application is exercising privileges to access to see what’s on the screen'. '-' is Markdown, do not translate",
+                      "\n - See what’s on the screen");
+            notification->setText(description);
+            notification->setIconName(QStringLiteral("media-record"));
+            notification->sendEvent();
+
+            std::tie(replyResponse, replyResults) = continueStartAfterDialog(session, selectedOutputs, selectedRegion, selectedWindows, true);
+            return;
+        }
+        qCWarning(XdgDesktopPortalKdeScreenCast) << "Pre-authorized ScreenCast had no monitor outputs for app_id" << app_id;
+    }
+
+    qCInfo(XdgDesktopPortalKdeScreenCast) << "Showing ScreenChooserDialog for app_id" << app_id;
     auto screenDialog = new ScreenChooserDialog(app_id, session->multipleSources(), SourceTypes(session->types()));
     Utils::setParentWindow(screenDialog->windowHandle(), parent_window);
     Request::makeClosableDialogRequestWithSession(handle, screenDialog, session);

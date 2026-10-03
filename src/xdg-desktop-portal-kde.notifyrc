@@ -290,6 +290,11 @@ Comment[zh_TW]=一個應用程式已得到您的輸入裝置與顯示器的控�
 Action=Popup
 Urgency=High
 
+[Event/screencaststarted]
+Name=Started Screen Sharing
+Comment=An application is sharing your screen
+Action=Popup
+Urgency=High
 
 [Event/inputcapturestarted]
 Name=Input Capture Started
